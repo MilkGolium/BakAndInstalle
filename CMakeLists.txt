@@ -12,11 +12,21 @@ add_executable(Project1
 )
 
 if(APPLE)
-    target_sources(Project1 PRIVATE platform/macOS/openURL.c)
+    target_sources(Project1 PRIVATE
+        platform/macOS/openURL.c
+        platform/macOS/sysUtil.c)
 elseif(WIN32)
-    target_sources(Project1 PRIVATE platform/Windows/openURL.c)
+    target_sources(Project1 PRIVATE
+        platform/Windows/openURL.c
+        platform/Windows/sysUtil.c)
 else()
-    target_sources(Project1 PRIVATE platform/Linux/openURL.c)
+    target_sources(Project1 PRIVATE
+        platform/Linux/openURL.c
+        platform/Linux/sysUtil.c)
+endif()
+
+if(WIN32)
+    target_link_libraries(Project1 PRIVATE urlmon)
 endif()
 
 target_include_directories(Project1 PRIVATE

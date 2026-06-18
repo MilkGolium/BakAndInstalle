@@ -10,7 +10,6 @@
 
 - sqlite/ 目录下的 sqlite3.c (9.1 MB) 和 sqlite3.h (675 KB) 文件巨大，Agent 不应读取其内容，否则会严重浪费上下文。读取 sqlite3.h 中的某个 API 签名时，应使用 grep 精确搜索。
 - shell.c (1.1 MB) 是 SQLite CLI shell 源码，本项目不使用，不应读取。
-- prompt.txt 是历史需求记录，已归档，不再更新，不应作为当前依据。
 
 ** 开发语言与风格
 
