@@ -226,6 +226,7 @@ cmake --build .
 |------|------|
 | downloadFile(url, destPath) | 从 URL 下载文件到本地路径，返回 1/0 |
 | copyPath(src, dst) | 递归复制文件或目录，返回 1/0 |
+| removePath(path, isDir) | 删除文件 (isDir=0) 或目录树 (isDir=1)，返回 1/0 |
 | createDir(path) | 递归创建目录，返回 1=已创建 / 0=已存在 / -1=错误 |
 
 ** dbAPI.h — 分类管理（Categories）

@@ -29,6 +29,23 @@ int copyPath(const char* src, const char* dst) {
     return SHFileOperationA(&op) == 0 ? 1 : 0;
 }
 
+int removePath(const char* path, int isDir) {
+    if (isDir) {
+        // SHFileOperation with FO_DELETE for recursive directory deletion
+        char buf[1024] = {0};
+        strncpy(buf, path, sizeof(buf) - 2);
+
+        SHFILEOPSTRUCTA op = {0};
+        op.wFunc = FO_DELETE;
+        op.pFrom = buf;
+        op.fFlags = FOF_NOCONFIRMATION | FOF_NOERRORUI | FOF_SILENT;
+
+        return SHFileOperationA(&op) == 0 ? 1 : 0;
+    }
+
+    return DeleteFileA(path) ? 1 : 0;
+}
+
 int createDir(const char* path) {
     size_t len = strlen(path);
     if (len == 0 || len >= 4096) return -1;

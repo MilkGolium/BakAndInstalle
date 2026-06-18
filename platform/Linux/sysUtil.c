@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <unistd.h>
 #include <errno.h>
 #include "sysUtil.h"
 
@@ -55,6 +56,29 @@ int copyPath(const char* src, const char* dst) {
     int ret = system(cmd);
     free(cmd);
     return ret == 0 ? 1 : 0;
+}
+
+int removePath(const char* path, int isDir) {
+    if (access(path, F_OK) != 0)
+        return 0;  // does not exist
+
+    if (isDir) {
+        size_t len = strlen(path);
+        char *cmd = (char*)malloc(len * 2 + 16);
+        if (!cmd) return 0;
+
+        size_t p = 0;
+        memcpy(cmd + p, "rm -rf \"", 8); p += 8;
+        escape(cmd, path, &p);
+        cmd[p++] = '"';
+        cmd[p]   = '\0';
+
+        int ret = system(cmd);
+        free(cmd);
+        return ret == 0 ? 1 : 0;
+    }
+
+    return unlink(path) == 0 ? 1 : 0;
 }
 
 int createDir(const char* path) {
