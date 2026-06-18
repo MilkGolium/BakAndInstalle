@@ -33,14 +33,15 @@
 | main.c | 程序入口，定义建表 SQL 常量 kCreateTableSQL，调用 initDatabase |
 | init.c / init.h | 数据库初始化，封装 sqlite3_open / exec / close |
 | openURL.h | openURL 函数声明，各平台各自实现 |
+| sysUtil.h | 系统工具函数声明（下载、复制、目录创建） |
 | dbAPI.c / dbAPI.h | 数据库业务 API（分类管理、软件管理、平台管理、配置管理、条件查询） |
-| CMakeLists.txt | CMake 构建配置，按平台条件编译 openURL |
+| CMakeLists.txt | CMake 构建配置，按平台条件编译 |
 | compile.sh | 一键编译脚本 |
 | sqlite/ | SQLite amalgamation，以源码形式参与编译（勿读） |
 | platform/ | 平台独立代码，按操作系统目录隔离 |
-| platform/macOS/openURL.c | macOS: system("open ...") 实现 |
-| platform/Windows/openURL.c | Windows: ShellExecuteA 实现 |
-| platform/Linux/openURL.c | Linux: xdg-open 实现 |
+| platform/macOS/ | macOS 实现（openURL.c, sysUtil.c） |
+| platform/Windows/ | Windows 实现（openURL.c, sysUtil.c） |
+| platform/Linux/ | Linux 实现（openURL.c, sysUtil.c） |
 
 * 数据库设计
 
@@ -133,21 +134,32 @@ is_manual: 0 = 自动下载，1 = 手动安装。UNIQUE 防止同一软件在同
 
 ** CMake 条件编译
 
+每个平台目录包含两个源文件，编译时由 CMake 条件选择：
+
 #+BEGIN_SRC cmake
 if(APPLE)
-    target_sources(Project1 PRIVATE platform/macOS/openURL.c)
+    target_sources(Project1 PRIVATE
+        platform/macOS/openURL.c
+        platform/macOS/sysUtil.c)
 elseif(WIN32)
-    target_sources(Project1 PRIVATE platform/Windows/openURL.c)
+    target_sources(Project1 PRIVATE
+        platform/Windows/openURL.c
+        platform/Windows/sysUtil.c)
 else()
-    target_sources(Project1 PRIVATE platform/Linux/openURL.c)
+    target_sources(Project1 PRIVATE
+        platform/Linux/openURL.c
+        platform/Linux/sysUtil.c)
 endif()
 #+END_SRC
 
-** openURL 各平台实现
+** 各平台实现对照
 
-- macOS: system("open \"<url>\"")，对 " 和 \ 做转义处理
-- Windows: ShellExecuteA(NULL, "open", url, ...)
-- Linux: system("xdg-open \"<url>\"")，对 " 和 \ 做转义处理
+| 函数 | macOS | Windows | Linux |
+|------|-------|---------|-------|
+| openURL | system("open ...") | ShellExecuteA | system("xdg-open ...") |
+| downloadFile | system("curl -L -o ...") | URLDownloadToFileA | system("curl -L -o ...") |
+| copyPath | system("cp -R ...") | SHFileOperation(FO_COPY) | system("cp -R ...") |
+| createDir | POSIX mkdir() 逐级 | CreateDirectoryA 逐级 | POSIX mkdir() 逐级 |
 
 * 关键技术决策
 
@@ -208,6 +220,14 @@ cmake --build .
 |------|------|
 | openURL(url) | 调用系统默认浏览器打开 URL，成功返回 1 |
 
+** sysUtil.h — 系统工具
+
+| 函数 | 作用 |
+|------|------|
+| downloadFile(url, destPath) | 从 URL 下载文件到本地路径，返回 1/0 |
+| copyPath(src, dst) | 递归复制文件或目录，返回 1/0 |
+| createDir(path) | 递归创建目录，返回 1=已创建 / 0=已存在 / -1=错误 |
+
 ** dbAPI.h — 分类管理（Categories）
 
 | 函数 | 作用 |
@@ -246,6 +266,7 @@ cmake --build .
 - [x] 平台绑定与解绑（addAppPlatform / removeAppPlatform）
 - [x] 配置与脚本管理（addAppConfig / removeAppConfig）
 - [x] 按平台条件查询（queryAppsByPlatform）
+- [x] 跨平台系统工具（downloadFile, copyPath, createDir）
 - [ ] 一键装机执行引擎（遍历 → 下载/安装 → 执行脚本）
 - [ ] 配置备份与还原功能
 - [ ] 平台无关的 GUI（可选，预留 Qt6）
