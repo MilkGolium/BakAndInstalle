@@ -1,7 +1,9 @@
 #include <windows.h>
 #include <urlmon.h>
 #include <shellapi.h>
+#include <stdio.h>
 #include <string.h>
+#include "sqlite/sqlite3.h"
 #include "sysUtil.h"
 
 // Windows: URLDownloadToFileA downloads the file using the system's URL
@@ -97,4 +99,96 @@ int createDir(const char* path) {
         return -1;
 
     return created ? 1 : 0;
+}
+
+// -- deployAppConfig 辅助函数 --
+
+static int executeScript(const char *type, const char *path) {
+    if (strcmp(type, "Bat") == 0) {
+        // 直接执行批处理文件
+        size_t len = strlen(path);
+        char *cmd = (char*)malloc(len + 4);
+        if (!cmd) return 0;
+        cmd[0] = '"';
+        memcpy(cmd + 1, path, len);
+        cmd[len + 1] = '"';
+        cmd[len + 2] = '\0';
+        int ret = system(cmd);
+        free(cmd);
+        return ret == 0 ? 1 : 0;
+    }
+    if (strcmp(type, "PowerShell") == 0) {
+        // powershell -ExecutionPolicy Bypass -File "path"
+        size_t len = strlen(path);
+        char *cmd = (char*)malloc(len + 48);
+        if (!cmd) return 0;
+        memcpy(cmd, "powershell -ExecutionPolicy Bypass -File \"", 42);
+        memcpy(cmd + 42, path, len);
+        cmd[len + 42] = '"';
+        cmd[len + 43] = '\0';
+        int ret = system(cmd);
+        free(cmd);
+        return ret == 0 ? 1 : 0;
+    }
+    fprintf(stderr, "executeScript: unsupported type '%s' for path %s\n",
+            type, path);
+    return 0;
+}
+
+int deployAppConfig(sqlite3 *db, int appPlatformId) {
+    static const char *sql =
+        "SELECT config_path, script_type, script_path "
+        "FROM app_configs "
+        "WHERE app_platform_id = ?1;";
+
+    sqlite3_stmt *stmt = NULL;
+    if (sqlite3_prepare_v2(db, sql, -1, &stmt, NULL) != SQLITE_OK) {
+        fprintf(stderr, "deployAppConfig: prepare failed: %s\n",
+                sqlite3_errmsg(db));
+        return 0;
+    }
+
+    sqlite3_bind_int(stmt, 1, appPlatformId);
+
+    int ok = 1;
+    int rc;
+    while ((rc = sqlite3_step(stmt)) == SQLITE_ROW) {
+        const char *configPath = (const char *)sqlite3_column_text(stmt, 0);
+        const char *scriptType = (const char *)sqlite3_column_text(stmt, 1);
+        const char *scriptPath = (const char *)sqlite3_column_text(stmt, 2);
+
+        // 恢复配置文件
+        if (configPath && configPath[0]) {
+            if (!copyPath(configPath, configPath)) {
+                // copyPath 可能因源目路径相同而返回失败；
+                // 此时检查配置文件是否已就位
+                if (GetFileAttributesA(configPath) == INVALID_FILE_ATTRIBUTES) {
+                    fprintf(stderr,
+                        "deployAppConfig: config not found: %s\n",
+                        configPath);
+                    ok = 0;
+                }
+            }
+        }
+
+        // 执行脚本
+        if (scriptType && scriptType[0] && scriptPath && scriptPath[0]) {
+            if (!executeScript(scriptType, scriptPath)) {
+                fprintf(stderr,
+                    "deployAppConfig: script failed: %s (%s)\n",
+                    scriptPath, scriptType);
+                ok = 0;
+            }
+        }
+    }
+
+    sqlite3_finalize(stmt);
+
+    if (rc != SQLITE_DONE) {
+        fprintf(stderr, "deployAppConfig: step failed: %s\n",
+                sqlite3_errmsg(db));
+        return 0;
+    }
+
+    return ok;
 }

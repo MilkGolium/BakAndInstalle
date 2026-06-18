@@ -33,7 +33,7 @@
 | main.c | 程序入口，定义建表 SQL 常量 kCreateTableSQL，调用 initDatabase |
 | init.c / init.h | 数据库初始化，封装 sqlite3_open / exec / close |
 | openURL.h | openURL 函数声明，各平台各自实现 |
-| sysUtil.h | 系统工具函数声明（下载、复制、目录创建） |
+| sysUtil.h | 系统工具函数声明（下载、复制、目录创建、配置部署与脚本执行） |
 | dbAPI.c / dbAPI.h | 数据库业务 API（分类管理、软件管理、平台管理、配置管理、条件查询） |
 | CMakeLists.txt | CMake 构建配置，按平台条件编译 |
 | compile.sh | 一键编译脚本 |
@@ -115,7 +115,7 @@ is_manual: 0 = 自动下载，1 = 手动安装。UNIQUE 防止同一软件在同
 | script_type | TEXT | |
 | script_path | TEXT | |
 
-记录每个平台版本对应的配置备份路径与初始化脚本（如 Registry、Bat、Shell）。
+记录每个平台版本对应的配置备份路径与初始化脚本（如 Shell、Bat、PowerShell）。
 
 ** 索引
 
@@ -228,6 +228,7 @@ cmake --build .
 | copyPath(src, dst) | 递归复制文件或目录，返回 1/0 |
 | removePath(path, isDir) | 删除文件 (isDir=0) 或目录树 (isDir=1)，返回 1/0 |
 | createDir(path) | 递归创建目录，返回 1=已创建 / 0=已存在 / -1=错误 |
+| deployAppConfig(db, appPlatformId) | 根据 app_platform 的 ID 查询 app_configs，恢复配置文件并执行脚本，返回 1/0 |
 
 ** dbAPI.h — 分类管理（Categories）
 
@@ -267,7 +268,8 @@ cmake --build .
 - [x] 平台绑定与解绑（addAppPlatform / removeAppPlatform）
 - [x] 配置与脚本管理（addAppConfig / removeAppConfig）
 - [x] 按平台条件查询（queryAppsByPlatform）
-- [x] 跨平台系统工具（downloadFile, copyPath, createDir）
+- [x] 跨平台系统工具（downloadFile, copyPath, createDir, removePath）
+- [x] 单应用配置部署（deployAppConfig — 根据 appPlatformId 恢复配置并执行脚本，可供执行引擎循环调用）
 - [ ] 一键装机执行引擎（遍历 → 下载/安装 → 执行脚本）
 - [ ] 配置备份与还原功能
 - [ ] 平台无关的 GUI（可选，预留 Qt6）
