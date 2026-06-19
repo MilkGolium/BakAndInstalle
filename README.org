@@ -33,8 +33,9 @@
 |---------------------+-----------------------------------------------------------------|
 | ~main.c~            | 程序入口，定义建表 SQL 常量 ~kCreateTableSQL~ ，调用 ~initDatabase~ |
 | ~init.c~ / ~init.h~ | 数据库初始化，封装 ~sqlite3_open~ / ~exec~ / ~close~              |
+| ~deploy.c~ / ~deploy.h~ | 配置部署与脚本执行（ ~deployAppConfig~ ），平台无关的编排函数       |
 | ~openURL.h~         | ~openURL~ 函数声明，各平台各自实现                                 |
-| ~sysUtil.h~         | 系统工具函数声明（下载、复制、目录创建、配置部署与脚本执行）            |
+| ~sysUtil.h~         | 系统工具函数声明（下载、复制、目录创建、脚本执行）                     |
 | ~dbAPI.c~ / dbAPI.h | 数据库业务 API（分类管理、软件管理、平台管理、配置管理、条件查询）      |
 | ~CMakeLists.txt~    | CMake 构建配置，按平台条件编译                                     |
 | ~compile.sh~        | 一键编译脚本                                                     |
@@ -229,6 +230,12 @@ cmake --build .
 | ~copyPath(src, dst)~                 | 递归复制文件或目录，返回 1/0                                                  |
 | ~removePath(path, isDir)~            | 删除文件 ( ~isDir=0~ ) 或目录树 ( ~isDir=1~ )，返回 1/0                       |
 | ~createDir(path)~                    | 递归创建目录，返回 1=已创建 / 0=已存在 / -1=错误                               |
+| ~executeScript(type, path)~          | 执行脚本文件（各平台支持 ~Shell~ / ~Bat~ / ~PowerShell~ 等），返回 1/0          |
+
+** ~deploy.h~ — 配置部署
+
+| 函数                                 | 作用                                                                       |
+|--------------------------------------+----------------------------------------------------------------------------|
 | ~deployAppConfig(db, appPlatformId)~ | 根据 ~app_platform~ 的 ID 查询 ~app_configs~ ，恢复配置文件并执行脚本，返回 1/0 |
 
 ** ~dbAPI.h~ — 分类管理（Categories）

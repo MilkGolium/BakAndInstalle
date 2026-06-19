@@ -1,8 +1,6 @@
 #ifndef SYSUTIL_H
 #define SYSUTIL_H
 
-#include "sqlite/sqlite3.h"
-
 // downloadFile: download a file from url and save it to destPath.
 // Returns 1 on success, 0 on failure.
 int downloadFile(const char* url, const char* destPath);
@@ -21,14 +19,9 @@ int removePath(const char* path, int isDir);
 //   Returns -1 on error (permission, disk full, quota, etc.).
 int createDir(const char* path);
 
-// deployAppConfig: restore config files and execute init scripts for
-// a specific app platform entry (identified by app_platforms.id).
-// Queries app_configs for rows matching app_platform_id:
-//   - if config_path is set, copies it to deploy the config
-//   - if script_path and script_type are set, executes the script
-// This function is single-responsibility: it does NOT iterate over
-// multiple apps, does NOT sort, and does NOT know which platform it
-// is running on.  Returns 1 if all items succeed, 0 if any fail.
-int deployAppConfig(sqlite3 *db, int appPlatformId);
+// executeScript: execute a script file identified by type ("Shell", "Bat",
+// "PowerShell", etc.) and path.  Implemented per platform in sysUtil.c.
+// Returns 1 on success, 0 on failure.
+int executeScript(const char *type, const char *path);
 
 #endif // SYSUTIL_H
